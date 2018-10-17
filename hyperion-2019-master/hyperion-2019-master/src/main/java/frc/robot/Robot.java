@@ -18,12 +18,15 @@ import edu.wpi.first.wpilibj.SampleRobot;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.VictorSP;
 import edu.wpi.first.wpilibj.SpeedController;
+import edu.wpi.first.wpilibj.SpeedControllerGroup;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.drive.MecanumDrive;
+import edu.wpi.first.wpilibj.drive.DifferentialDrive;
 //import java.io.Console;
 import edu.wpi.first.wpilibj.ADXRS450_Gyro;
 import edu.wpi.first.wpilibj.CameraServer;
 import edu.wpi.first.wpilibj.PIDController;
+
 //import edu.wpi.first.wpilibj.PIDInterface;
 //import edu.wpi.cscore.UsbCamera; //For the alternate camera code
 
@@ -67,9 +70,9 @@ public class Robot extends SampleRobot{
 		private double slideMovementScaleTime = 7.0; //TO-DO
 		private double slideMovementSwitchTime = 3.0; //TO-DO
 		
-		//MecanumDrive constructor
+		//Drive Constructors
 		private MecanumDrive m_robotDrive;
-
+		
 		//Controllers/etc
 		private Timer m_timer = new Timer();
 		private Joystick m_rightJoystick;
@@ -77,18 +80,26 @@ public class Robot extends SampleRobot{
 		//private Joystick m_darioJoystick;
 		
 		//Drive Train Components
-		private SpeedController m_frontLeft;
-		private SpeedController m_frontRight;
-		private SpeedController m_rearLeft;
-		private SpeedController m_rearRight;
+		//private SpeedController m_frontLeft;
+		//private SpeedController m_frontRight;
+		//private SpeedController m_rearLeft;
+		//private SpeedController m_rearRight;
 		private SpeedController m_slideMotor1;
 		private SpeedController m_slideMotor2;
 		private SpeedController m_ArmMotor;
 		private SpeedController m_LeftArmMotor;
 		private SpeedController m_RightArmMotor;
-			
+		VictorSP m_frontleft = new VictorSP(kFrontLeftChannel);
+        VictorSP m_rearleft = new VictorSP(kRearLeftChannel);
+		SpeedControllerGroup m_left = new SpeedControllerGroup(m_frontleft, m_rearleft);
+		VictorSP m_frontright = new VictorSP(kFrontRightChannel);
+        VictorSP m_rearright = new VictorSP(kRearRightChannel);
+		SpeedControllerGroup m_right = new SpeedControllerGroup(m_frontright, m_rearright);
+		DifferentialDrive m_drive = new DifferentialDrive(m_left, m_right);
+		private DifferentialDrive m_robotTank;	
+
 		//Sensor declarations
-		private ADXRS450_Gyro onboardGyro;
+		private ADXRS450_Gyro  onboardGyro;
 		private MecanumEncoder m_robotEncoder;
 		private Encoder e_frontRight;
 		private Encoder e_rearRight;
@@ -104,10 +115,10 @@ public class Robot extends SampleRobot{
 		//Constructors for joysticks and motor controllers
 				m_rightJoystick = new Joystick(kRightJoystickChannel);
 				m_leftJoystick = new Joystick(kLeftJoystickChannel);
-				m_frontLeft = new VictorSP(kFrontLeftChannel);
-				m_frontRight = new VictorSP(kFrontRightChannel);
-				m_rearLeft = new VictorSP(kRearLeftChannel);
-				m_rearRight = new VictorSP(kRearRightChannel);
+			    //m_frontLeft = new VictorSP(kFrontLeftChannel);
+				//m_frontRight = new VictorSP(kFrontRightChannel);
+			   // m_rearLeft = new VictorSP(kRearLeftChannel);
+				//m_rearRight = new VictorSP(kRearRightChannel);
 				m_slideMotor1 = new VictorSP(kSlideMotor1);
 				m_slideMotor2 = new VictorSP(kSlideMotor2);
 				m_slideMotor2.setInverted(true);
@@ -117,10 +128,9 @@ public class Robot extends SampleRobot{
 				
 				
 				
-				
 				//Constructor for RobotDrive
 				//Note: X is forward-backward, Y is left-right(strafe), Z is rotation
-				m_robotDrive = new MecanumDrive(m_frontLeft, m_rearLeft, m_frontRight, m_rearRight);
+				//m_robotDrive = new MecanumDrive(m_frontLeft, m_rearLeft, m_frontRight, m_rearRight);
 				
 				//Encoders
 				e_frontRight = new Encoder(kFrontRightEncoderA, kFrontRightEncoderB, false, Encoder.EncodingType.k1X);
@@ -135,7 +145,7 @@ public class Robot extends SampleRobot{
 				e_ArmEncoder = new Encoder(kArmEncoderA, kArmEncoderB, true, Encoder.EncodingType.k1X);
 				//PID Arm Controller (P Gain, I Gain, D Gain, Input Source, Output Source)
 				PIDArmController = new PIDController(0, 0, 0, e_ArmEncoder, m_ArmMotor);
-				
+
 				//Drive Encoders
 				m_robotEncoder = new MecanumEncoder(e_frontRight, e_rearRight, e_frontLeft, e_rearLeft);
 				
@@ -169,8 +179,9 @@ public class Robot extends SampleRobot{
     		//Alternate, fail-safe code.
     		case 'N':
     			moveForward(0);
-    			break;
-    		//Swwitches b/w starting positions	
+				break;
+			
+    		//Switches b/w starting positions	
             case 'L':
                 switch(initGoal){
 					//Move Foward
@@ -180,7 +191,6 @@ public class Robot extends SampleRobot{
 					//switches b/w scale/switch
                     case 'c':
                         if(gameData.charAt(1) == 'L') {//DONE
-                        	moveSlideUp(0.5, slideMovementScaleTime);
                             moveForward(36.0);
                             turnLeft();
                             moveForward(38.37);
@@ -200,8 +210,16 @@ public class Robot extends SampleRobot{
                             turnLeft();
                             moveForward(74.43);
                             turnLeft();
-                    }   
-                    break;
+					}   
+					break;
+					case 'T': //Test code for scale
+					if(gameData.charAt(1) == 'L') {
+						
+					} else if(gameData.charAt(1) == 'R') {	
+		
+					}
+					break;
+                    
                     //switches b/w scale/switch
                     case 'w':
                         if(gameData.charAt(0) == 'L') {//DONE
@@ -380,7 +398,8 @@ public class Robot extends SampleRobot{
     	Timer.delay(1.0);
     	turnLeft();
     	Timer.delay(0.5);
-    	}
+		}
+
     /**
      * Moves the robot forward a set distance in units.
      * 
@@ -388,9 +407,9 @@ public class Robot extends SampleRobot{
      */
     public void moveForward(double distance) {
         if(isAutonomous() || isTest()){
-            double initDistance = m_robotEncoder.getDistance();
-    	    while((m_robotEncoder.getDistance() < initDistance + distance) && ((isAutonomous() || isTest()) && isEnabled())) {
-    	    	System.out.println("Encoder:  " + m_robotEncoder.getDistance());
+            double initDistance = m_robotEncoder.getDistanceAvg();
+    	    while((m_robotEncoder.getDistanceAvg() < initDistance + distance) && ((isAutonomous() || isTest()) && isEnabled())) {
+    	    	System.out.println("Encoder:  " + m_robotEncoder.getDistanceAvg());
     		m_robotDrive.driveCartesian(0.0, 0.5, 0.0, 0.0);
     		Timer.delay(0.02);
     	   }
@@ -399,7 +418,25 @@ public class Robot extends SampleRobot{
     	   m_robotDrive.driveCartesian(0.0, 0.0, 0.0, 0.0);
         }
     }
-    
+	
+	public void SwitchMiddleInit() {
+		if(isAutonomous()|| isTest()) {
+			double startDistance = 12;
+			double currentGyroPos = onboardGyro.getAngle();
+			double currentEncoderPos = m_robotEncoder.getDistanceLeft();
+			//45 degree angle, 17.5 inches radius, 13.8 arc length
+			while(onboardGyro.getAngle() < currentGyroPos + 45 &&  m_robotEncoder.getDistanceLeft() < currentEncoderPos + 13.8 ) {
+				m_robotTank.tankDrive(0.5, 0.05);
+			}
+			while(m_robotEncoder.getDistanceLeft() < startDistance) {
+				m_robotTank.tankDrive(0.5, 0.5);
+			}
+			while(onboardGyro.getAngle() < currentGyroPos + 90 && m_robotEncoder.getDistanceRight() < currentEncoderPos + 4 ) {
+				m_robotTank.tankDrive(0.25, 0.75);
+			}
+		}
+	}
+	
     /**
      * Moves the robot backward a set distance in units.
      * 
@@ -407,8 +444,8 @@ public class Robot extends SampleRobot{
      */
     public void moveBackward(double distance) {
         if(isAutonomous() || isTest()){
-            double initDistance = m_robotEncoder.getDistance();
-    	    while(m_robotEncoder.getDistance() > initDistance - distance && ((isAutonomous() || isTest()) && isEnabled())) {
+            double initDistance = m_robotEncoder.getDistanceAvg();
+    	    while(m_robotEncoder.getDistanceAvg() > initDistance - distance && ((isAutonomous() || isTest()) && isEnabled())) {
       		    m_robotDrive.driveCartesian(0.0, -0.5, 0.0, 0.0);
     		  Timer.delay(0.02);
     	   }  
@@ -486,7 +523,9 @@ public class Robot extends SampleRobot{
 		Timer.delay(0.2);
     	m_robotDrive.driveCartesian(0.0, 0.0, 0.0, 0.0);
         }
-    }
+	}
+
+
 	//Arm Intake Controls
 	//Intake
 	public void Intake(double speed) {

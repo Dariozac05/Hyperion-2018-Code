@@ -90,8 +90,18 @@ public class MecanumEncoder{
 		return m_positionY;
 	}
 	
-	public double getDistance() {
+	public double getDistanceAvg() {
 		double distance = ((m_frontRight.getDistance() + m_rearRight.getDistance() + m_frontLeft.getDistance() + m_rearLeft.getDistance()) / 4 );
+		return distance;
+	}
+
+	public double getDistanceRight() {
+		double distance = ((m_frontRight.getDistance() + m_rearRight.getDistance()) / 2 );
+		return distance;
+	}
+
+	public double getDistanceLeft() {
+		double distance = ((m_frontLeft.getDistance() + m_rearLeft.getDistance()) / 2 );
 		return distance;
 	}
 	
